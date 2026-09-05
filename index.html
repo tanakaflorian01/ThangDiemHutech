@@ -296,7 +296,7 @@
       <input type="password" id="matKhau" placeholder="Nhập mật khẩu để mở khóa..." onkeydown="if(event.key==='Enter') taiVaGiaiMaDuLieu()">
       <div class="form-buttons">
           <button onclick="taiVaGiaiMaDuLieu()">🔑 Mở khóa</button>
-          <a href="https://NguyenThiBichHop-hutech.github.io/T-nh-i-m-TRUNG-B-NH-HUTECH/encrypt.html" target="_blank" style="text-decoration: none; margin: 5px;">
+          <a href="https://tanakaflorian01.github.io/ThangDiemHutech/encrypt.html" target="_blank" style="text-decoration: none; margin: 5px;">
               <button type="button" style="background-color: var(--info-color); width: 100%;">⚙️ Công cụ Mã hóa</button>
           </a>
           <button type="button" id="btn-download-json" style="background-color: #007bff;">📥 Tải .json</button>
@@ -371,8 +371,8 @@
 
 <script>
 let bangDiem = [];
-const GITHUB_USER = 'NguyenThiBichHop-hutech';
-const GITHUB_REPO = 'T-nh-i-m-TRUNG-B-NH-HUTECH';
+const GITHUB_USER = 'tanakaflorian01';
+const GITHUB_REPO = 'ThangDiemHutech';
 const GITHUB_BRANCH = 'main';
 
 const tinhDiemHe4 = d => (d >= 8.5) ? 4.0 : (d >= 7.8) ? 3.5 : (d >= 7.0) ? 3.0 : (d >= 6.3) ? 2.5 : (d >= 5.5) ? 2.0 : (d >= 4.8) ? 1.5 : (d >= 4.0) ? 1.0 : 0.0;
@@ -573,9 +573,140 @@ document.getElementById("btn-xuat-pdf").addEventListener("click", xuatBangDiemPD
 
 // ... Toàn bộ các hàm còn lại giữ nguyên như code trước ...
 // (taiVaGiaiMaDuLieu, addEventListenersToTable, các sự kiện click, v.v...)
-document.getElementById('btn-cai-thien-diem').addEventListener('click', function() { if (bangDiem.length === 0) { alert("Vui lòng thêm ít nhất một môn học trước khi sử dụng công cụ này."); return; } localStorage.setItem('bangDiemData', JSON.stringify(bangDiem)); window.open('cai-thien-diem.html', '_blank'); }); function taiVaGiaiMaDuLieu() { const mk = document.getElementById("matKhau").value; const feedback = document.getElementById("unlock-feedback"); if (!mk) { feedback.style.color = 'red'; feedback.textContent = "Vui lòng nhập mật khẩu!"; return; } if (bangDiem.length > 0 && !confirm("Thao tác này sẽ ghi đè dữ liệu hiện tại trên bảng. Bạn có chắc chắn?")) { return; } feedback.textContent = "Đang tải và giải mã dữ liệu..."; feedback.style.color = '#004AAD'; const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data.enc?timestamp=${new Date().getTime()}`; fetch(url) .then(res => { if (!res.ok) throw new Error(`Không thể tải file dữ liệu! Status: ${res.status}`); return res.text(); }) .then(encryptedData => { try { const bytes = CryptoJS.AES.decrypt(encryptedData, mk); const originalText = bytes.toString(CryptoJS.enc.Utf8); if (!originalText) throw new Error("Sai mật khẩu hoặc dữ liệu bị lỗi."); bangDiem = JSON.parse(originalText); capNhatBang(); tinhDiemTongKet(); feedback.textContent = "Mở khóa và tải dữ liệu thành công!"; feedback.style.color = '#28a745'; document.getElementById("matKhau").value = ""; setTimeout(() => feedback.textContent = "", 4000); } catch (err) { console.error("Lỗi giải mã:", err); feedback.style.color = 'red'; feedback.textContent = "Mở khóa thất bại. Vui lòng kiểm tra lại mật khẩu."; bangDiem = []; capNhatBang(); tinhDiemTongKet(); } }) .catch(err => { console.error("Lỗi khi tải dữ liệu:", err); feedback.style.color = 'red'; feedback.textContent = "Không thể tải dữ liệu. Vui lòng kiểm tra kết nối mạng và đường dẫn GitHub."; }); } function addEventListenersToTable() { document.querySelectorAll("#body-bang-diem tr[data-original-index]").forEach(row => { const index = parseInt(row.dataset.originalIndex, 10); if (isNaN(index) || index < 0 || !bangDiem[index]) return; row.querySelector(".btn-xoa-hang").addEventListener("click", () => { if (confirm(`Bạn có chắc muốn xóa môn "${bangDiem[index].tenMonHoc}"?`)) { bangDiem.splice(index, 1); capNhatBang(); tinhDiemTongKet(); } }); row.querySelectorAll('td[contenteditable="true"]').forEach(cell => { cell.addEventListener('blur', (e) => { const field = e.target.dataset.field; let newValue = e.target.textContent.trim(); const monHoc = bangDiem[index]; if (!monHoc) return; const oldValue = monHoc[field]; if (String(oldValue) === newValue) return; if (field === 'soTinChi' || field === 'diemHe10') { const numValue = parseFloat(newValue); if (field === 'soTinChi' && (isNaN(numValue) || numValue < 1 || numValue > 4)) { alert("Số tín chỉ phải là một số từ 1 đến 4."); e.target.textContent = oldValue; return; } if (field === 'diemHe10' && (isNaN(numValue) || numValue < 0 || numValue > 10)) { alert("Điểm hệ 10 phải là một số từ 0 đến 10."); e.target.textContent = oldValue; return; } monHoc[field] = numValue; } else { monHoc[field] = newValue; } capNhatBang(); tinhDiemTongKet(); }); cell.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }); }); }); } document.getElementById("searchBox").addEventListener("input", capNhatBang); document.getElementById("btn-tinh-diem-trung-binh").addEventListener("click", tinhDiemTongKet); document.getElementById("form-them-mon").addEventListener("submit", function(e) { e.preventDefault(); const thongBao = document.getElementById("thong-bao"); let ma = document.getElementById("ma-mon-hoc").value.trim().toUpperCase(); let ten = document.getElementById("ten-mon-hoc").value.trim(); let tin = parseFloat(document.getElementById("so-tin-chi").value); let diem10 = parseFloat(document.getElementById("diem-he-10").value); thongBao.textContent = ""; if (!ma || !ten || isNaN(tin) || isNaN(diem10)) { thongBao.textContent = "Vui lòng nhập đầy đủ và chính xác thông tin."; return; } if (tin < 1 || tin > 4) { thongBao.textContent = "Số tín chỉ phải là một số từ 1 đến 4."; document.getElementById("so-tin-chi").focus(); return; } if (diem10 < 0 || diem10 > 10) { thongBao.textContent = "Điểm hệ 10 phải là một số từ 0 đến 10."; document.getElementById("diem-he-10").focus(); return; } if (bangDiem.some(mon => mon.maMonHoc === ma)) { thongBao.textContent = `Mã môn học "${ma}" đã tồn tại.`; return; } bangDiem.unshift({ maMonHoc: ma, tenMonHoc: ten, soTinChi: tin, diemHe10: diem10 }); capNhatBang(); tinhDiemTongKet(); this.reset(); document.getElementById("ma-mon-hoc").focus(); }); document.getElementById("btn-xoa").addEventListener("click", function(e) { e.preventDefault(); if (bangDiem.length > 0 && confirm("Thao tác này sẽ xóa toàn bộ dữ liệu trên bảng. Bạn có chắc chắn?")) { bangDiem = []; capNhatBang(); tinhDiemTongKet(); } }); function downloadJsonData() { if (bangDiem.length === 0) { alert("Không có dữ liệu để tải về."); return; } const jsonData = JSON.stringify(bangDiem, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'HUTECH_BangDiem_Data.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href); } document.getElementById('btn-download-json').addEventListener('click', downloadJsonData); document.getElementById("btn-save-github").addEventListener("click", function() { if (bangDiem.length === 0) { alert("Không có dữ liệu để lưu."); return; } const mk = prompt("🔐 Nhập mật khẩu Admin để lưu dữ liệu:", ""); if (mk === null || mk.trim() === "") { alert("❌ Thao tác đã bị hủy."); return; } const keyCheckUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/keycheck.enc?timestamp=${new Date().getTime()}`; fetch(keyCheckUrl) .then(res => { if (!res.ok) throw new Error("Không tìm thấy file keycheck.enc."); return res.text(); }) .then(encryptedCheck => { try { const decrypted = CryptoJS.AES.decrypt(encryptedCheck, mk).toString(CryptoJS.enc.Utf8); if (JSON.parse(decrypted) !== "VALID_ADMIN_KEY") { throw new Error("Invalid key content"); } alert("✅ Mật khẩu hợp lệ. Đang chuẩn bị dữ liệu..."); const duLieuJSON = JSON.stringify(bangDiem, null, 2); const duLieuMaHoa = CryptoJS.AES.encrypt(duLieuJSON, mk).toString(); navigator.clipboard.writeText(duLieuMaHoa).then(() => { alert("Dữ liệu mới đã được mã hóa và sao chép vào clipboard.\n\n👉 Bạn sẽ được chuyển đến trang chỉnh sửa. Hãy dán (Ctrl+V) để thay thế nội dung cũ và 'Commit changes'."); const githubEditUrl = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/edit/${GITHUB_BRANCH}/data.enc`; window.open(githubEditUrl, '_blank'); }).catch(err => { console.error('Lỗi sao chép:', err); alert('❌ Không thể tự động sao chép.'); }); } catch (e) { console.error("Lỗi xác thực:", e); alert("❌ Mật khẩu sai!"); } }) .catch(err => { console.error("Lỗi khi tải keycheck.enc:", err); alert("❌ Đã xảy ra lỗi khi xác thực."); }); }); document.getElementById("btn-thoat").addEventListener("click", function(e) { e.preventDefault(); if (confirm("Bạn có chắc chắn muốn đóng tab này?")) { window.close(); } }); document.getElementById('file-upload').addEventListener('change', function handleFileSelect(event) { const file = event.target.files[0]; if (!file) return; const feedbackEl = document.getElementById('upload-feedback'); feedbackEl.textContent = 'Đang xử lý file...'; feedbackEl.style.color = '#004AAD'; const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const worksheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonData = XLSX.utils.sheet_to_json(worksheet); if (jsonData.length === 0) throw new Error("File Excel trống."); const requiredCols = ['MaMonHoc', 'TenMonHoc', 'SoTinChi', 'DiemHe10']; const header = Object.keys(jsonData[0]); if (!requiredCols.every(col => header.includes(col))) { throw new Error(`File Excel thiếu cột bắt buộc. Cần có: MaMonHoc, TenMonHoc, SoTinChi, DiemHe10.`); } const duLieuMoi = jsonData.map(row => { const maMonHoc = String(row.MaMonHoc || '').trim().toUpperCase(); const tenMonHoc = String(row.TenMonHoc || '').trim(); const soTinChi = parseFloat(row.SoTinChi); const diemHe10 = parseFloat(row.DiemHe10); if (!maMonHoc || !tenMonHoc || isNaN(soTinChi) || isNaN(diemHe10) || soTinChi < 1 || soTinChi > 4 || diemHe10 < 0 || diemHe10 > 10) return null; return { maMonHoc, tenMonHoc, soTinChi, diemHe10 }; }).filter(item => item !== null); if (duLieuMoi.length === 0) throw new Error("Không có dữ liệu hợp lệ trong file Excel."); if (bangDiem.length > 0 && !confirm("Bạn muốn THAY THẾ dữ liệu hiện tại bằng dữ liệu từ file? (Nhấn 'Cancel' để NỐI THÊM vào cuối danh sách)")) { duLieuMoi.forEach(monMoi => { if (!bangDiem.some(monCu => monCu.maMonHoc === monMoi.maMonHoc)) { bangDiem.push(monMoi); } }); } else { bangDiem = duLieuMoi; } capNhatBang(); tinhDiemTongKet(); feedbackEl.textContent = `Tải lên và xử lý thành công ${duLieuMoi.length} môn học!`; feedbackEl.style.color = '#28a745'; } catch (err) { feedbackEl.textContent = 'Lỗi: ' + err.message; feedbackEl.style.color = 'red'; } finally { event.target.value = ''; } }; reader.onerror = () => { feedbackEl.textContent = 'Lỗi khi đọc file.'; feedbackEl.style.color = 'red'; }; reader.readAsArrayBuffer(file); }); document.getElementById('json-upload').addEventListener('change', function handleJsonFile(event) { const file = event.target.files[0]; if (!file) return; const feedbackEl = document.getElementById('json-upload-feedback'); feedbackEl.textContent = 'Đang xử lý file...'; feedbackEl.style.color = '#004AAD'; const reader = new FileReader(); reader.onload = function(e) { try { const jsonData = JSON.parse(e.target.result); if (!Array.isArray(jsonData) || jsonData.length === 0) throw new Error("File JSON không hợp lệ hoặc trống."); const requiredKeys = ['maMonHoc', 'tenMonHoc', 'soTinChi', 'diemHe10']; const duLieuMoi = jsonData.map(row => { if (!requiredKeys.every(k => row.hasOwnProperty(k)) || typeof row.maMonHoc !== 'string' || typeof row.tenMonHoc !== 'string' || isNaN(parseFloat(row.soTinChi)) || isNaN(parseFloat(row.diemHe10))) { return null; } const soTinChi = parseFloat(row.soTinChi); if (soTinChi < 1 || soTinChi > 4) return null; return { maMonHoc: row.maMonHoc.trim().toUpperCase(), tenMonHoc: row.tenMonHoc.trim(), soTinChi: soTinChi, diemHe10: parseFloat(row.diemHe10) }; }).filter(item => item !== null); if (duLieuMoi.length === 0) throw new Error("Không có dữ liệu hợp lệ trong file JSON (kiểm tra các key và giá trị)."); if (bangDiem.length > 0 && !confirm("Bạn muốn THAY THẾ dữ liệu hiện tại bằng dữ liệu từ file? (Nhấn 'Cancel' để NỐI THÊM vào cuối danh sách)")) { duLieuMoi.forEach(monMoi => { if (!bangDiem.some(monCu => monCu.maMonHoc === monMoi.maMonHoc)) { bangDiem.push(monMoi); } }); } else { bangDiem = duLieuMoi; } capNhatBang(); tinhDiemTongKet(); feedbackEl.textContent = `Tải lên và xử lý thành công ${duLieuMoi.length} môn học!`; feedbackEl.style.color = '#28a745'; } catch (err) { feedbackEl.textContent = 'Lỗi: ' + err.message; feedbackEl.style.color = 'red'; } finally { event.target.value = ''; } }; reader.onerror = () => { feedbackEl.textContent = 'Lỗi khi đọc file.'; feedbackEl.style.color = 'red'; }; reader.readAsText(file); });
+document.getElementById('btn-cai-thien-diem').addEventListener('click', function() { if (bangDiem.length === 0) { alert("Vui lòng thêm ít nhất một môn học trước khi sử dụng công cụ này."); return; } localStorage.setItem('bangDiemData', JSON.stringify(bangDiem)); window.open('cai-thien-diem.html', '_blank'); }); function taiVaGiaiMaDuLieu() {
+  const mk = document.getElementById("matKhau").value;
+  const feedback = document.getElementById("unlock-feedback");
+  const currentUser = window.HutechAuth ? window.HutechAuth.getSessionUser() : null;
+  const adminUser = currentUser && window.HutechAuth
+    ? window.HutechAuth.isAdmin(currentUser)
+    : false;
+
+  if (!currentUser) {
+    feedback.style.color = 'red';
+    feedback.textContent = "Bạn chưa đăng nhập.";
+    return;
+  }
+
+  if (!adminUser) {
+    feedback.style.color = 'red';
+    feedback.textContent = "Chỉ tài khoản Admin mới được mở khóa dữ liệu.";
+    return;
+  }
+
+  if (!mk) {
+    feedback.style.color = 'red';
+    feedback.textContent = "Vui lòng nhập mật khẩu!";
+    return;
+  }
+
+  if (bangDiem.length > 0 &&
+      !confirm("Thao tác này sẽ ghi đè dữ liệu hiện tại trên bảng. Bạn có chắc chắn?")) {
+    return;
+  }
+
+  feedback.textContent = "Đang tải và giải mã dữ liệu...";
+  feedback.style.color = '#004AAD';
+
+  const url =
+    `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data.enc?timestamp=${Date.now()}`;
+
+  fetch(url, { cache: "no-store" })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Không thể tải file dữ liệu! Status: ${res.status}`);
+      }
+      return res.text();
+    })
+    .then(encryptedData => {
+      try {
+        const bytes = CryptoJS.AES.decrypt(encryptedData.trim(), mk);
+        const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!originalText) {
+          throw new Error("Sai mật khẩu hoặc dữ liệu bị lỗi.");
+        }
+
+        const tatCaDuLieu = JSON.parse(originalText);
+
+        if (!Array.isArray(tatCaDuLieu)) {
+          throw new Error("Dữ liệu phải là một mảng JSON.");
+        }
+
+        // Admin được xem toàn bộ dữ liệu.
+        bangDiem = tatCaDuLieu;
+
+        capNhatBang();
+        tinhDiemTongKet();
+
+        feedback.textContent = `Mở khóa thành công ${bangDiem.length} môn học!`;
+        feedback.style.color = '#28a745';
+
+        document.getElementById("matKhau").value = "";
+        setTimeout(() => feedback.textContent = "", 4000);
+      } catch (err) {
+        console.error("Lỗi giải mã:", err);
+        feedback.style.color = 'red';
+        feedback.textContent = "Mở khóa thất bại. Vui lòng kiểm tra lại mật khẩu.";
+        bangDiem = [];
+        capNhatBang();
+        tinhDiemTongKet();
+      }
+    })
+    .catch(err => {
+      console.error("Lỗi khi tải dữ liệu:", err);
+      feedback.style.color = 'red';
+      feedback.textContent =
+        `Không thể tải dữ liệu GitHub (${err.message}). Kiểm tra repository/Pages.`;
+    });
+}
+
+function addEventListenersToTable() { document.querySelectorAll("#body-bang-diem tr[data-original-index]").forEach(row => { const index = parseInt(row.dataset.originalIndex, 10); if (isNaN(index) || index < 0 || !bangDiem[index]) return; row.querySelector(".btn-xoa-hang").addEventListener("click", () => { if (confirm(`Bạn có chắc muốn xóa môn "${bangDiem[index].tenMonHoc}"?`)) { bangDiem.splice(index, 1); capNhatBang(); tinhDiemTongKet(); } }); row.querySelectorAll('td[contenteditable="true"]').forEach(cell => { cell.addEventListener('blur', (e) => { const field = e.target.dataset.field; let newValue = e.target.textContent.trim(); const monHoc = bangDiem[index]; if (!monHoc) return; const oldValue = monHoc[field]; if (String(oldValue) === newValue) return; if (field === 'soTinChi' || field === 'diemHe10') { const numValue = parseFloat(newValue); if (field === 'soTinChi' && (isNaN(numValue) || numValue < 1 || numValue > 4)) { alert("Số tín chỉ phải là một số từ 1 đến 4."); e.target.textContent = oldValue; return; } if (field === 'diemHe10' && (isNaN(numValue) || numValue < 0 || numValue > 10)) { alert("Điểm hệ 10 phải là một số từ 0 đến 10."); e.target.textContent = oldValue; return; } monHoc[field] = numValue; } else { monHoc[field] = newValue; } capNhatBang(); tinhDiemTongKet(); }); cell.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }); }); }); } document.getElementById("searchBox").addEventListener("input", capNhatBang); document.getElementById("btn-tinh-diem-trung-binh").addEventListener("click", tinhDiemTongKet); document.getElementById("form-them-mon").addEventListener("submit", function(e) { e.preventDefault(); const thongBao = document.getElementById("thong-bao"); let ma = document.getElementById("ma-mon-hoc").value.trim().toUpperCase(); let ten = document.getElementById("ten-mon-hoc").value.trim(); let tin = parseFloat(document.getElementById("so-tin-chi").value); let diem10 = parseFloat(document.getElementById("diem-he-10").value); thongBao.textContent = ""; if (!ma || !ten || isNaN(tin) || isNaN(diem10)) { thongBao.textContent = "Vui lòng nhập đầy đủ và chính xác thông tin."; return; } if (tin < 1 || tin > 4) { thongBao.textContent = "Số tín chỉ phải là một số từ 1 đến 4."; document.getElementById("so-tin-chi").focus(); return; } if (diem10 < 0 || diem10 > 10) { thongBao.textContent = "Điểm hệ 10 phải là một số từ 0 đến 10."; document.getElementById("diem-he-10").focus(); return; } if (bangDiem.some(mon => mon.maMonHoc === ma)) { thongBao.textContent = `Mã môn học "${ma}" đã tồn tại.`; return; } const currentUser = window.HutechAuth ? window.HutechAuth.getSessionUser() : null;
+  if (!currentUser) {
+    thongBao.textContent = "Bạn chưa đăng nhập.";
+    return;
+  }
+  bangDiem.unshift({
+    username: currentUser.username,
+    maMonHoc: ma,
+    tenMonHoc: ten,
+    soTinChi: tin,
+    diemHe10: diem10
+  }); capNhatBang(); tinhDiemTongKet(); this.reset(); document.getElementById("ma-mon-hoc").focus(); }); document.getElementById("btn-xoa").addEventListener("click", function(e) { e.preventDefault(); if (bangDiem.length > 0 && confirm("Thao tác này sẽ xóa toàn bộ dữ liệu trên bảng. Bạn có chắc chắn?")) { bangDiem = []; capNhatBang(); tinhDiemTongKet(); } }); function downloadJsonData() { if (bangDiem.length === 0) { alert("Không có dữ liệu để tải về."); return; } const jsonData = JSON.stringify(bangDiem, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'HUTECH_BangDiem_Data.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href); } document.getElementById('btn-download-json').addEventListener('click', downloadJsonData); document.getElementById("btn-save-github").addEventListener("click", function() { if (bangDiem.length === 0) { alert("Không có dữ liệu để lưu."); return; } const mk = prompt("🔐 Nhập mật khẩu Admin để lưu dữ liệu:", ""); if (mk === null || mk.trim() === "") { alert("❌ Thao tác đã bị hủy."); return; } const keyCheckUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/keycheck.enc?timestamp=${new Date().getTime()}`; fetch(keyCheckUrl) .then(res => { if (!res.ok) throw new Error("Không tìm thấy file keycheck.enc."); return res.text(); }) .then(encryptedCheck => { try { const decrypted = CryptoJS.AES.decrypt(encryptedCheck, mk).toString(CryptoJS.enc.Utf8); if (JSON.parse(decrypted) !== "VALID_ADMIN_KEY") { throw new Error("Invalid key content"); } alert("✅ Mật khẩu hợp lệ. Đang chuẩn bị dữ liệu..."); const duLieuJSON = JSON.stringify(bangDiem, null, 2); const duLieuMaHoa = CryptoJS.AES.encrypt(duLieuJSON, mk).toString(); navigator.clipboard.writeText(duLieuMaHoa).then(() => { alert("Dữ liệu mới đã được mã hóa và sao chép vào clipboard.\n\n👉 Bạn sẽ được chuyển đến trang chỉnh sửa. Hãy dán (Ctrl+V) để thay thế nội dung cũ và 'Commit changes'."); const githubEditUrl = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/edit/${GITHUB_BRANCH}/data.enc`; window.open(githubEditUrl, '_blank'); }).catch(err => { console.error('Lỗi sao chép:', err); alert('❌ Không thể tự động sao chép.'); }); } catch (e) { console.error("Lỗi xác thực:", e); alert("❌ Mật khẩu sai!"); } }) .catch(err => { console.error("Lỗi khi tải keycheck.enc:", err); alert("❌ Đã xảy ra lỗi khi xác thực."); }); }); document.getElementById("btn-thoat").addEventListener("click", function(e) { e.preventDefault(); if (confirm("Bạn có chắc chắn muốn đóng tab này?")) { window.close(); } }); document.getElementById('file-upload').addEventListener('change', function handleFileSelect(event) { const file = event.target.files[0]; if (!file) return; const feedbackEl = document.getElementById('upload-feedback'); feedbackEl.textContent = 'Đang xử lý file...'; feedbackEl.style.color = '#004AAD'; const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const worksheet = workbook.Sheets[workbook.SheetNames[0]]; const jsonData = XLSX.utils.sheet_to_json(worksheet); if (jsonData.length === 0) throw new Error("File Excel trống."); const requiredCols = ['MaMonHoc', 'TenMonHoc', 'SoTinChi', 'DiemHe10']; const header = Object.keys(jsonData[0]); if (!requiredCols.every(col => header.includes(col))) { throw new Error(`File Excel thiếu cột bắt buộc. Cần có: MaMonHoc, TenMonHoc, SoTinChi, DiemHe10.`); } const duLieuMoi = jsonData.map(row => { const maMonHoc = String(row.MaMonHoc || '').trim().toUpperCase(); const tenMonHoc = String(row.TenMonHoc || '').trim(); const soTinChi = parseFloat(row.SoTinChi); const diemHe10 = parseFloat(row.DiemHe10); if (!maMonHoc || !tenMonHoc || isNaN(soTinChi) || isNaN(diemHe10) || soTinChi < 1 || soTinChi > 4 || diemHe10 < 0 || diemHe10 > 10) return null; return { username: (window.HutechAuth && window.HutechAuth.getSessionUser()) ? window.HutechAuth.getSessionUser().username : '', maMonHoc, tenMonHoc, soTinChi, diemHe10 }; }).filter(item => item !== null); if (duLieuMoi.length === 0) throw new Error("Không có dữ liệu hợp lệ trong file Excel."); if (bangDiem.length > 0 && !confirm("Bạn muốn THAY THẾ dữ liệu hiện tại bằng dữ liệu từ file? (Nhấn 'Cancel' để NỐI THÊM vào cuối danh sách)")) { duLieuMoi.forEach(monMoi => { if (!bangDiem.some(monCu => monCu.maMonHoc === monMoi.maMonHoc)) { bangDiem.push(monMoi); } }); } else { bangDiem = duLieuMoi; } capNhatBang(); tinhDiemTongKet(); feedbackEl.textContent = `Tải lên và xử lý thành công ${duLieuMoi.length} môn học!`; feedbackEl.style.color = '#28a745'; } catch (err) { feedbackEl.textContent = 'Lỗi: ' + err.message; feedbackEl.style.color = 'red'; } finally { event.target.value = ''; } }; reader.onerror = () => { feedbackEl.textContent = 'Lỗi khi đọc file.'; feedbackEl.style.color = 'red'; }; reader.readAsArrayBuffer(file); }); document.getElementById('json-upload').addEventListener('change', function handleJsonFile(event) { const file = event.target.files[0]; if (!file) return; const feedbackEl = document.getElementById('json-upload-feedback'); feedbackEl.textContent = 'Đang xử lý file...'; feedbackEl.style.color = '#004AAD'; const reader = new FileReader(); reader.onload = function(e) { try { const jsonData = JSON.parse(e.target.result); if (!Array.isArray(jsonData) || jsonData.length === 0) throw new Error("File JSON không hợp lệ hoặc trống."); const requiredKeys = ['maMonHoc', 'tenMonHoc', 'soTinChi', 'diemHe10']; const duLieuMoi = jsonData.map(row => { if (!requiredKeys.every(k => row.hasOwnProperty(k)) || typeof row.maMonHoc !== 'string' || typeof row.tenMonHoc !== 'string' || isNaN(parseFloat(row.soTinChi)) || isNaN(parseFloat(row.diemHe10))) { return null; } const soTinChi = parseFloat(row.soTinChi); if (soTinChi < 1 || soTinChi > 4) return null; return { username: (window.HutechAuth && window.HutechAuth.getSessionUser()) ? window.HutechAuth.getSessionUser().username : '', maMonHoc: row.maMonHoc.trim().toUpperCase(), tenMonHoc: row.tenMonHoc.trim(), soTinChi: soTinChi, diemHe10: parseFloat(row.diemHe10) }; }).filter(item => item !== null); if (duLieuMoi.length === 0) throw new Error("Không có dữ liệu hợp lệ trong file JSON (kiểm tra các key và giá trị)."); if (bangDiem.length > 0 && !confirm("Bạn muốn THAY THẾ dữ liệu hiện tại bằng dữ liệu từ file? (Nhấn 'Cancel' để NỐI THÊM vào cuối danh sách)")) { duLieuMoi.forEach(monMoi => { if (!bangDiem.some(monCu => monCu.maMonHoc === monMoi.maMonHoc)) { bangDiem.push(monMoi); } }); } else { bangDiem = duLieuMoi; } capNhatBang(); tinhDiemTongKet(); feedbackEl.textContent = `Tải lên và xử lý thành công ${duLieuMoi.length} môn học!`; feedbackEl.style.color = '#28a745'; } catch (err) { feedbackEl.textContent = 'Lỗi: ' + err.message; feedbackEl.style.color = 'red'; } finally { event.target.value = ''; } }; reader.onerror = () => { feedbackEl.textContent = 'Lỗi khi đọc file.'; feedbackEl.style.color = 'red'; }; reader.readAsText(file); });
 </script>
 <script>
+  // =========================================================
+  // HUTECH AUTH DATA HELPERS
+  // =========================================================
+  function getHutechCurrentUser() {
+    return window.HutechAuth ? window.HutechAuth.getSessionUser() : null;
+  }
+
+  function isHutechAdmin(user) {
+    return !!(window.HutechAuth && window.HutechAuth.isAdmin(user));
+  }
+
+  function locDiemTheoTaiKhoan(allData, user) {
+    if (!Array.isArray(allData)) return [];
+
+    if (isHutechAdmin(user)) {
+      return allData;
+    }
+
+    if (!user || !user.username) {
+      return [];
+    }
+
+    const username = String(user.username).trim().toLowerCase();
+
+    return allData.filter(mon => {
+      const recordUsername = String(
+        mon.username ?? mon.userName ?? mon.taiKhoan ?? mon.account ?? ""
+      ).trim().toLowerCase();
+
+      return recordUsername === username;
+    });
+  }
+
   (function() {
     const authStatusMessage = document.getElementById('auth-status-message');
     const adminLockedMessage = document.getElementById('admin-locked-message');
@@ -597,7 +728,7 @@ document.getElementById('btn-cai-thien-diem').addEventListener('click', function
       const adminLoggedIn = isAdmin(currentUser);
 
       if (!currentUser) {
-        authStatusMessage.textContent = 'Bạn chưa đăng nhập. Hãy vào trang đăng nhập/đăng ký để tiếp tục.';
+        authStatusMessage.textContent = 'Bạn chưa đăng nhập. Hãy đăng nhập để tiếp tục.';
         adminLockedText.textContent = 'Chỉ tài khoản admin mới có thể mở khóa dữ liệu Admin và dùng nút lưu Admin.';
       } else if (adminLoggedIn) {
         authStatusMessage.textContent = `Bạn đang đăng nhập với quyền Admin: ${currentUser.displayName || currentUser.username}.`;
