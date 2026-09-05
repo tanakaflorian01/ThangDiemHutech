@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <!-- Tiêu đề được cập nhật để phù hợp với vai trò Admin -->
+  <title>Công cụ Mã hóa Dữ liệu (Admin)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    /* Các style này được sao chép từ file chính để đảm bảo đồng bộ 100% */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #eef4fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .navbar {
+      width: 100%;
+      background-color: #004AAD;
+      color: white;
+      padding: 12px 24px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+    .navbar h1 { margin: 0; font-size: 20px; }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    h2, h3 { margin-top: 0; color: #004AAD; }
+    label { font-weight: bold; display: block; margin: 15px 0 8px; }
+    input[type="password"], textarea {
+      box-sizing: border-box;
+      padding: 12px;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 14px;
+    }
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+    button {
+      background: #004AAD;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      transition: background-color 0.2s;
+    }
+    button:hover { background: #00337d; }
+    #btnSaoChep {
+        background-color: #28a745;
+        margin-left: 10px;
+    }
+    #btnSaoChep:hover {
+        background-color: #218838;
+    }
+    #feedback {
+      font-weight: bold;
+      min-height: 20px;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 16px;
+    }
+    .instructions {
+        background-color: #f8f9fa;
+        border-left: 4px solid #004AAD;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+    }
+    .instructions p {
+        margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <!-- Tiêu đề H1 được cập nhật -->
+    <h1>⚙️ Công cụ Mã hóa Dữ liệu (Admin)</h1>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Hướng dẫn Cập nhật Dữ liệu</h2>
+      <div class="instructions">
+          <p><strong>Bước 1:</strong> Dán nội dung bảng điểm (dạng JSON) của bạn vào ô "Dữ liệu JSON". Bạn có thể lấy dữ liệu này bằng cách nhấn nút "Xuất ra JSON" ở trang chính.</p>
+          <p><strong>Bước 2:</strong> Nhập mật khẩu ADMIN. Mật khẩu này phải <strong>trùng khớp</strong> với mật khẩu bạn dùng để mở khóa.</p>
+          <p><strong>Bước 3:</strong> Nhấn nút "Mã hóa".</p>
+          
+      </div>
+
+      <label for="jsonData">1. Dữ liệu JSON cần mã hóa:</label>
+      <textarea id="jsonData" placeholder='[
+  {
+    "maMonHoc": "CS101",
+    "tenMonHoc": "Nhập môn lập trình",
+    "soTinChi": 3,
+    "diemHe10": 8.5
+  }
+]'>
+      </textarea>
+
+      <label for="matKhauMaHoa">2. Mật khẩu ADMIN:</label>
+      <input type="password" id="matKhauMaHoa" placeholder="Nhập mật khẩu bạn dùng để mở khóa...">
+
+      <button id="btnMaHoa" onclick="maHoaDuLieu()">🔑 Mã hóa</button>
+      
+      <hr style="margin: 25px 0; border: 1px solid #eee;">
+
+      <label for="ketQua">3. Kết quả đã mã hóa :</label>
+      <textarea id="ketQua" readonly placeholder="Kết quả mã hóa sẽ xuất hiện ở đây..."></textarea>
+      <button id="btnSaoChep" onclick="saoChepKetQua()">📋 Sao chép Kết quả</button>
+
+      <p id="feedback"></p>
+    </div>
+  </div>
+
+<script>
+function maHoaDuLieu() {
+    const jsonData = document.getElementById('jsonData').value;
+    const matKhau = document.getElementById('matKhauMaHoa').value;
+    const ketQuaEl = document.getElementById('ketQua');
+    const feedback = document.getElementById('feedback');
+
+    feedback.textContent = "";
+    ketQuaEl.value = "";
+
+    // --- Validation ---
+    if (!jsonData.trim()) {
+        feedback.style.color = 'red';
+        feedback.textContent = "Lỗi: Vui lòng nhập dữ liệu JSON.";
+        return;
+    }
+    if (!matKhau) {
+        feedback.style.color = 'red';
+        feedback.textContent = "Lỗi: Vui lòng nhập mật khẩu ADMIN.";
+        return;
+    }
+    try {
+        JSON.parse(jsonData);
+    } catch (e) {
+        feedback.style.color = 'red';
+        feedback.textContent = "Lỗi: Dữ liệu nhập vào không phải là JSON hợp lệ. Vui lòng kiểm tra lại.";
+        return;
+    }
+
+    // --- Encryption ---
+    try {
+        const encrypted = CryptoJS.AES.encrypt(jsonData, matKhau).toString();
+        ketQuaEl.value = encrypted;
+        feedback.style.color = '#28a745';
+        feedback.textContent = 'Mã hóa thành công! Giờ bạn có thể sao chép kết quả.';
+    } catch (err) {
+        feedback.style.color = 'red';
+        feedback.textContent = 'Đã xảy ra lỗi trong quá trình mã hóa.';
+        console.error("Encryption error:", err);
+    }
+}
+
+function saoChepKetQua() {
+    const ketQuaEl = document.getElementById('ketQua');
+    const btn = document.getElementById('btnSaoChep');
+
+    if (!ketQuaEl.value) {
+        alert("Chưa có nội dung để sao chép!");
+        return;
+    }
+
+    ketQuaEl.select();
+    ketQuaEl.setSelectionRange(0, 99999); // For mobile devices
+
+    navigator.clipboard.writeText(ketQuaEl.value).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = 'Đã sao chép!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }, (err) => {
+        alert('Lỗi khi sao chép: ', err);
+    });
+}
+</script>
+
+</body>
+</html>
